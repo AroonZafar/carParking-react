@@ -1,0 +1,146 @@
+.view-all-items-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.view-all-items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.view-all-items-header h1 {
+  color: #282c34;
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+}
+
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.item-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.item-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border-color: #61dafb;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.item-card h2 {
+  color: #282c34;
+  margin: 0;
+  font-size: 1.3rem;
+  flex: 1;
+}
+
+.category-badge {
+  background-color: #61dafb;
+  color: #282c34;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.item-description {
+  color: #666;
+  margin: 1rem 0;
+  flex-grow: 1;
+  line-height: 1.5;
+}
+
+.item-price {
+  font-size: 1.5rem;
+  color: #2e7d32;
+  margin: 1rem 0;
+  font-weight: 600;
+}
+
+.item-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.item-actions .btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.no-items {
+  text-align: center;
+  padding: 3rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+  color: #666;
+}
+
+.no-items a {
+  color: #61dafb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.no-items a:hover {
+  text-decoration: underline;
+}
+
+.error-message {
+  background-color: #ffe0e0;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border-left: 4px solid #c33;
+}
+
+@media (max-width: 768px) {
+  .items-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .view-all-items-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-all-items-header .btn {
+    width: 100%;
+  }
+}
