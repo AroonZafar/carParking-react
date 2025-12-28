@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, memo } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { collection, getDocs, deleteDoc, doc, query, orderBy, where, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 import './ViewAllItems.css';
 
 interface Item {
@@ -11,12 +11,15 @@ interface Item {
   price: number;
   category: string;
   createdAt: any;
+  userId: string;
+  createdBy: string;
 }
 
 const ViewAllItems = memo(function ViewAllItems() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [userRole, setUserRole] = useState('user');
   const isMounted = useRef(true);
   const cachedItems = useRef<Item[]>([]);
 
@@ -27,14 +30,51 @@ const ViewAllItems = memo(function ViewAllItems() {
   }, []);
 
   useEffect(() => {
-    fetchItems();
+    fetchUserRole();
   }, []);
+
+  useEffect(() => {
+    fetchItems();
+  }, [userRole]);
+
+  const fetchUserRole = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists() && isMounted.current) {
+        setUserRole(userDoc.data().role || 'user');
+      }
+    } catch (err) {
+      console.error('Error fetching user role:', err);
+    }
+  };
 
   const fetchItems = async () => {
     setLoading(true);
     setError('');
     try {
-      const q = query(collection(db, 'items'), orderBy('createdAt', 'desc'));
+      const user = auth.currentUser;
+      if (!user) {
+        setError('You must be logged in');
+        setLoading(false);
+        return;
+      }
+
+      let q;
+      if (userRole === 'admin') {
+        // Admin sees all items
+        q = query(collection(db, 'items'), orderBy('createdAt', 'desc'));
+      } else {
+        // Regular users see only their items
+        q = query(
+          collection(db, 'items'),
+          where('userId', '==', user.uid),
+          orderBy('createdAt', 'desc')
+        );
+      }
+
       const querySnapshot = await getDocs(q);
       const itemsData: Item[] = [];
       querySnapshot.forEach((document) => {
@@ -54,7 +94,15 @@ const ViewAllItems = memo(function ViewAllItems() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, itemUserId: string) => {
+    const user = auth.currentUser;
+    
+    // Check if user can delete this item
+    if (userRole !== 'admin' && user?.uid !== itemUserId) {
+      setError('You can only delete your own items');
+      return;
+    }
+
     if (window.confirm('Are you sure you want to delete this item?')) {
       const originalItems = items;
       setItems(items.filter(item => item.id !== id));
@@ -72,7 +120,7 @@ const ViewAllItems = memo(function ViewAllItems() {
   return (
     <div className="view-all-items-container">
       <div className="view-all-items-header">
-        <h1>All Items</h1>
+        <h1>All Items {userRole === 'user' && '(Your Items)'}</h1>
         <Link to="/create" className="btn btn-primary">+ Create New Item</Link>
       </div>
 
@@ -99,6 +147,12 @@ const ViewAllItems = memo(function ViewAllItems() {
                 <strong>${item.price.toFixed(2)}</strong>
               </div>
 
+              {item.createdBy && (
+                <div className="item-creator">
+                  <small>Created by: {item.createdBy}</small>
+                </div>
+              )}
+
               <div className="item-actions">
                 <Link to={`/items/${item.id}`} className="btn btn-primary">
                   View Details
@@ -107,7 +161,7 @@ const ViewAllItems = memo(function ViewAllItems() {
                   Edit
                 </Link>
                 <button
-                  onClick={() => handleDelete(item.id)}
+                  onClick={() => handleDelete(item.id, item.userId)}
                   className="btn btn-danger"
                 >
                   Delete

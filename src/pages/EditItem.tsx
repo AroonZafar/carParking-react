@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getDoc, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { getDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 import './EditItem.css';
 
 interface Item {
@@ -10,6 +10,7 @@ interface Item {
   description: string;
   price: number;
   category: string;
+  userId: string;
 }
 
 export default function EditItem() {
@@ -21,7 +22,8 @@ export default function EditItem() {
     title: '',
     description: '',
     price: 0,
-    category: ''
+    category: '',
+    userId: ''
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -43,15 +45,27 @@ export default function EditItem() {
   const fetchItem = async (itemId: string) => {
     try {
       const docSnap = await getDoc(doc(db, 'items', itemId));
+      const user = auth.currentUser;
+
       if (isMounted.current) {
         if (docSnap.exists()) {
           const data = docSnap.data();
+          
+          // Check if user is admin or item owner
+          const isAdmin = await checkIfAdmin(user?.uid || '');
+          if (data.userId !== user?.uid && !isAdmin) {
+            setError('You do not have permission to edit this item');
+            setLoading(false);
+            return;
+          }
+
           setFormData({
             id: docSnap.id,
             title: data.title,
             description: data.description,
             price: data.price,
-            category: data.category || ''
+            category: data.category || '',
+            userId: data.userId
           });
         } else {
           setError('Item not found');
@@ -63,6 +77,15 @@ export default function EditItem() {
         setError(err.message || 'Failed to fetch item');
         setLoading(false);
       }
+    }
+  };
+
+  const checkIfAdmin = async (userId: string) => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      return userDoc.exists() && userDoc.data()?.role === 'admin';
+    } catch {
+      return false;
     }
   };
 
@@ -92,7 +115,7 @@ export default function EditItem() {
         description: formData.description,
         price: formData.price,
         category: formData.category,
-        updatedAt: new Date()
+        updatedAt: serverTimestamp()
       });
       
       if (isMounted.current) {

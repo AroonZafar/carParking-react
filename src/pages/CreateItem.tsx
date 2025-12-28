@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 import './CreateItem.css';
 
 export default function CreateItem() {
@@ -35,10 +35,20 @@ export default function CreateItem() {
     }
 
     try {
+      const user = auth.currentUser;
+      if (!user) {
+        setError('You must be logged in to create items');
+        setLoading(false);
+        return;
+      }
+
       await addDoc(collection(db, 'items'), {
         ...formData,
         price: parseFloat(formData.price),
-        createdAt: new Date(),
+        userId: user.uid,
+        createdBy: user.email,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
       
       setTimeout(() => {
